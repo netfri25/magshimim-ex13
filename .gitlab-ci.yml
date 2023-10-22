@@ -1,0 +1,129 @@
+image: alpine
+
+#######################################
+# gitlab-ci.yml for Ex13 - MT Server  #
+#######################################
+
+stages:
+  - build-pipeline-tools
+  - files-verifier
+  - submission-date-verifier
+  - zip-and-send
+
+Build Pipeline Tools:
+  stage: build-pipeline-tools
+  before_script:
+    - apk update
+    - apk add git
+    - apk add go
+    - apk add build-base gcc abuild binutils
+  script:
+    - git clone https://gitlab.com/exercisetests/verifysubmittedfiles.git
+    - cd verifysubmittedfiles
+    - go build .
+    - mv filesverifier ..
+    - cd ..
+
+    - git clone https://gitlab.com/exercisetests/valgrindvarifier.git
+    - cd valgrindvarifier
+    - g++ ValgrindVarifier.cpp -o valgrindverifier
+    - mv valgrindverifier ..
+    - cd ..
+
+    - git clone https://gitlab.com/exercisetests/ex13.git
+    - cd ex13
+    - mv PreSubmissionChecker.txt ..
+    - mv PostSubmissionChecker.txt ..
+    - cd ..
+  artifacts:
+    paths:
+      - filesverifier
+      - valgrindverifier
+      - PreSubmissionChecker.txt
+      - PostSubmissionChecker.txt
+
+Verify Submission:
+  stage: files-verifier
+  needs:
+    - job: Build Pipeline Tools
+  script:
+    - echo "Verifying .gitignore..."
+    - ./filesverifier PreSubmissionChecker.txt 5
+    - echo "Gitignore files exists"
+    - echo "Verifying required VS files..."
+    - ./filesverifier PreSubmissionChecker.txt 2
+    - echo "Required VS files ok"
+    - echo "Verifying files that should not be submitted..."
+    - ./filesverifier PreSubmissionChecker.txt 4
+    - echo "Excluded files ok"
+
+# Verify Bonus Files:
+#   stage: files-verifier
+#   needs:
+#     - job: BuildFilesVerifier
+#   script:
+#     - ./filesverifier PostSubmissionChecker.txt 3
+#   allow_failure: true
+
+Verify Necessary Exercise Files:
+  stage: files-verifier
+  needs:
+    - job: Build Pipeline Tools
+  script:
+    - ./filesverifier PostSubmissionChecker.txt 1
+  allow_failure: false
+
+Verify Submission Date:
+  stage: submission-date-verifier
+  needs: []
+  before_script:
+    - apk update
+    - apk add git
+    - apk add go
+  script:
+    - git clone https://gitlab.com/exercisetests/submissionverifier.git
+    - cd submissionverifier
+    - mv submission_verifier.go ..
+    - cd ..
+    - git clone https://gitlab.com/exercisetests/submissionverifierfiles.git
+    - mv submission_verifier.go submissionverifierfiles
+    - cd submissionverifierfiles
+    - go run submission_verifier.go $CI_PROJECT_PATH $GITLAB_USER_ID
+  allow_failure: true
+
+ZIPandSend:
+  stage: zip-and-send
+  needs:
+    - Build Pipeline Tools
+    - Verify Submission
+    - Verify Necessary Exercise Files
+    - Verify Submission Date
+  before_script:
+    - apk update
+    - apk add git
+    - apk add go
+    - apk add zip
+    - apk add build-base gcc abuild binutils
+  script:
+    - commit_message="${CI_COMMIT_MESSAGE//$'\n'/}"
+    - echo "$commit_message"
+    - if [ "$commit_message" != "ING" ]; then echo "Skipping zip load..." && exit 0; fi
+    - git clone https://gitlab.com/exercisetests/utils.git
+    - cat utils/ING
+    - export ING_SERVER_URL=$(grep "ING_SERVER_URL=" utils/ING | cut -d '=' -f2)
+    - export ZIP_TARGET_SERVER=$(grep "ZIP_TARGET_SERVER=" utils/ING | cut -d '=' -f2)
+    - echo "Extracted ING_SERVER_URL is:" $ING_SERVER_URL
+    - echo "Extracted ZIP_TARGET_SERVER is:" $ZIP_TARGET_SERVER
+    - MODIFIED_ZIP_TARGET_SERVER=${ZIP_TARGET_SERVER//\//@@@}
+    - echo "Original ZIP_TARGET_SERVER is:" $ZIP_TARGET_SERVER
+    - echo "Modified ZIP_TARGET_SERVER is:" $MODIFIED_ZIP_TARGET_SERVER
+    - zip -r loadedFromPipeline.zip . -x ".git"
+    - export STUDENT_NAME=$(basename $(dirname $(pwd)))
+    - export CLASS_NAME=$(basename $(dirname $(dirname $(pwd))))
+    - export PROJECT_NAME=$(basename $(pwd))
+    - echo $CLASS_NAME/$STUDENT_NAME/$PROJECT_NAME/$CI_PROJECT_ID/$CI_PIPELINE_ID
+    - echo sending files to...
+    - echo $ING_SERVER_URL/push_project_zip/$CLASS_NAME/$STUDENT_NAME/$PROJECT_NAME/$CI_PROJECT_ID/$CI_PIPELINE_ID/$MODIFIED_ZIP_TARGET_SERVER
+    - curl -X POST -F "file=@loadedFromPipeline.zip" $ING_SERVER_URL/push_project_zip/$CLASS_NAME/$STUDENT_NAME/$PROJECT_NAME/$CI_PROJECT_ID/$CI_PIPELINE_ID/$MODIFIED_ZIP_TARGET_SERVER
+  allow_failure: true
+  when: always
