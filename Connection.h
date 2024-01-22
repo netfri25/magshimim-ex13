@@ -2,12 +2,15 @@
 
 #include <string>
 
-// TODO: proper exceptions
+// NOTE: not using const for methods ON PURPOSE
+//       all of the methods are doing some sort of a side effect, so marking them as const doesn't make any sense
 
 class Connection {
 public:
-    // TODO: how do I disallow copy/move constructors?
+    // disallow copy/move/default constructors
     Connection() = delete;
+    Connection(Connection&&) = default;
+    Connection(Connection const&) = delete;
 
     ~Connection();
 
@@ -31,6 +34,9 @@ protected:
 
     // accept a connection
     Connection accept();
+
+    // close the connection
+    void close();
 
 private:
     Connection(int socket_fd);

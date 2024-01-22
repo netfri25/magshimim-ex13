@@ -20,7 +20,7 @@ Connection::Connection(int fd) {
 }
 
 Connection::~Connection() {
-    close(this->_socket_fd);
+    this->close();
 }
 
 void Connection::connect(std::string const& server_ip, unsigned short const port) {
@@ -84,4 +84,9 @@ std::string Connection::read_raw(unsigned const amount, int const flags) {
     std::string const output(buf, read_count);
     delete[] buf;
     return output;
+}
+
+void Connection::close() {
+    if (::close(this->_socket_fd) < 0)
+        throw std::runtime_error(std::string("close error: ") + strerror(errno));
 }

@@ -29,3 +29,7 @@ void Client::send_message(Message const& message) {
 void Client::interact() {
     // TODO: interaction
 }
+
+void Client::close() {
+    this->Connection::close();
+}
