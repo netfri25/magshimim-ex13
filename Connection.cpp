@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -10,17 +11,13 @@
 Connection::Connection(int const domain, int const type, int const protocol) {
     this->_socket_fd = ::socket(domain, type, protocol);
 
-    // TODO: proper exceptions
+    // TODO: exceptions
     if (this->_socket_fd < 0)
         throw std::runtime_error(std::string("Connection(): ") + strerror(errno));
 }
 
 Connection::Connection(int fd) {
     this->_socket_fd = fd;
-}
-
-Connection::~Connection() {
-    this->close();
 }
 
 void Connection::connect(std::string const& server_ip, unsigned short const port) {
@@ -35,7 +32,7 @@ void Connection::connect(std::string const& server_ip, unsigned short const port
 
     // TODO: exceptions
 	if (status < 0)
-		throw std::runtime_error("Cant connect to server");
+		throw std::runtime_error(std::string("connect error: ") + strerror(errno));
 }
 
 
@@ -61,8 +58,10 @@ void Connection::listen(unsigned short const connections) {
 
 Connection Connection::accept() {
     int fd = ::accept(this->_socket_fd, NULL, NULL);
+    // TODO: exceptions
     if (fd < 0)
         throw std::runtime_error(std::string("accept error: ") + strerror(errno));
+    std::cerr << "accepted: " << fd << std::endl;
     return Connection(fd);
 }
 
@@ -76,6 +75,7 @@ void Connection::send_raw(std::string const& data, int const flags) {
 std::string Connection::read_raw(unsigned const amount, int const flags) {
     char* buf = new char[amount + 1];
     int const read_count = recv(this->_socket_fd, buf, amount, flags);
+    // TODO: exceptions
     if (read_count < 0) {
         delete[] buf;
         throw std::runtime_error(std::string("read error: ") + strerror(errno));
@@ -86,7 +86,7 @@ std::string Connection::read_raw(unsigned const amount, int const flags) {
     return output;
 }
 
-void Connection::close() {
-    if (::close(this->_socket_fd) < 0)
-        throw std::runtime_error(std::string("close error: ") + strerror(errno));
+void Connection::close() const {
+    std::cerr << "[WARN]: closing fd " << this->_socket_fd << std::endl;
+    ::close(this->_socket_fd);
 }

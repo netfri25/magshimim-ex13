@@ -10,8 +10,6 @@
 class Client : protected Connection {
 public:
 	Client(std::string const& username);
-    Client(Client&&) = default;
-    Client(Client const&) = delete;
 
 	void connect(std::string const& server_ip, int const port);
     void login_notify();

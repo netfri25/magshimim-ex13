@@ -10,15 +10,16 @@ public:
     // disallow copy/move/default constructors
     Connection() = delete;
     Connection(Connection&&) = default;
-    Connection(Connection const&) = delete;
-
-    ~Connection();
+    Connection(Connection const&) = default;
 
     // send the message
     void send_raw(std::string const& data, int const flags = 0);
 
     // recv the amount of bytes passed as the argument
     std::string read_raw(unsigned const amount, int const flags = 0);
+
+    // close the connection
+    void close() const;
 
 protected:
     Connection(int const domain, int const type, int const protocol);
@@ -34,9 +35,6 @@ protected:
 
     // accept a connection
     Connection accept();
-
-    // close the connection
-    void close();
 
 private:
     Connection(int socket_fd);
