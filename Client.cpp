@@ -15,11 +15,12 @@ Client::Client(std::string const& username)
 
 void Client::connect(std::string const& server_ip, int const port) {
     this->Connection::connect(server_ip, port);
+    this->login_notify();
 }
 
 void Client::login_notify() {
     this->send_message(MClientLogIn(this->_username));
-    auto const response = MServerUpdate(*this);
+    // auto const response = MServerUpdate(*this);
 }
 
 void Client::send_message(Message const& message) {
@@ -28,8 +29,5 @@ void Client::send_message(Message const& message) {
 
 void Client::interact() {
     // TODO: interaction
-}
-
-void Client::close() {
-    this->Connection::close();
+    for (;;);
 }
