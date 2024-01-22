@@ -14,6 +14,10 @@
 // NOTE: not using const for methods ON PURPOSE
 //       all of the methods are doing some sort of a side effect, so marking them as const doesn't make any sense
 
+#define MESSAGE_MAGIC "&MAGSH_MESSAGE&"
+#define AUTHOR_MAGIC "&Author&"
+#define DATA_MAGIC "&DATA&"
+
 class Message;
 
 class Connection {

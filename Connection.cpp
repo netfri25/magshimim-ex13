@@ -90,6 +90,9 @@ std::unique_ptr<Message> Connection::read() {
 
 
 std::string Connection::read_raw(unsigned const amount, int const flags) {
+    if (amount == 0)
+        return "";
+
     char* buf = new char[amount + 1];
     int const read_count = recv(this->_socket_fd, buf, amount, flags);
     // TODO: exceptions
