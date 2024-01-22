@@ -1,9 +1,20 @@
 #pragma once
 
+#include <memory>
 #include <string>
+
+#define _DEBUG
+
+#ifdef _DEBUG
+#define TRACE(arg) ::std::cerr << "[TRACE]: " arg << std::endl
+#else
+#define TRACE(arg)
+#endif
 
 // NOTE: not using const for methods ON PURPOSE
 //       all of the methods are doing some sort of a side effect, so marking them as const doesn't make any sense
+
+class Message;
 
 class Connection {
 public:
@@ -12,11 +23,17 @@ public:
     Connection(Connection&&) = default;
     Connection(Connection const&) = default;
 
-    // send the message
+    // send a raw message
     void send_raw(std::string const& data, int const flags = 0);
+
+    // send message
+    void send(Message const& msg);
 
     // recv the amount of bytes passed as the argument
     std::string read_raw(unsigned const amount, int const flags = 0);
+
+    // read message
+    std::unique_ptr<Message> read();
 
     // close the connection
     void close() const;

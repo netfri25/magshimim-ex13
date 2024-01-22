@@ -1,4 +1,5 @@
 #include "Connection.h"
+#include "Message.h"
 
 #include <arpa/inet.h>
 #include <cstring>
@@ -13,7 +14,13 @@ Connection::Connection(int const domain, int const type, int const protocol) {
 
     // TODO: exceptions
     if (this->_socket_fd < 0)
-        throw std::runtime_error(std::string("Connection(): ") + strerror(errno));
+        throw std::runtime_error(std::string("socket error: ") + strerror(errno));
+
+    // TODO: exceptions
+    const int enable = 1;
+    if (::setsockopt(this->_socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+        throw std::runtime_error(std::string("setsockopt error: ") + strerror(errno));
+
 }
 
 Connection::Connection(int fd) {
@@ -23,9 +30,9 @@ Connection::Connection(int fd) {
 void Connection::connect(std::string const& server_ip, unsigned short const port) {
 	struct sockaddr_in sa = {0};
 
-	sa.sin_port = htons(port); // port that server will listen to
+	sa.sin_port = ::htons(port); // port that server will listen to
 	sa.sin_family = AF_INET;   // must be AF_INET
-	sa.sin_addr.s_addr = inet_addr(server_ip.c_str());    // the IP of the server
+	sa.sin_addr.s_addr = ::inet_addr(server_ip.c_str());    // the IP of the server
 
 	// the process will not continue until the server accepts the client
 	int const status = ::connect(this->_socket_fd, (struct sockaddr*)&sa, sizeof(sa));
@@ -39,7 +46,7 @@ void Connection::connect(std::string const& server_ip, unsigned short const port
 void Connection::bind(unsigned short const port, int in_family, int in_addr) {
     struct sockaddr_in sa = {0};
 
-    sa.sin_port = htons(port);
+    sa.sin_port = ::htons(port);
     sa.sin_family = in_family;
     sa.sin_addr.s_addr = in_addr;
     // sa.sin_family = AF_INET;
@@ -66,11 +73,21 @@ Connection Connection::accept() {
 }
 
 void Connection::send_raw(std::string const& data, int const flags) {
-    int const sent = send(this->_socket_fd, data.c_str(), data.size(), flags);
+    TRACE("send() \"" << data << "\", flags: " << flags);
+    int const sent = ::send(this->_socket_fd, data.c_str(), data.size(), flags);
     // TODO: exceptions
     if (sent < 0)
         throw std::runtime_error(std::string("send error: ") + strerror(errno));
 }
+
+void Connection::send(Message const& msg) {
+    this->send_raw(msg.encode());
+}
+
+std::unique_ptr<Message> Connection::read() {
+    return Message::decode(*this);
+}
+
 
 std::string Connection::read_raw(unsigned const amount, int const flags) {
     char* buf = new char[amount + 1];
@@ -82,6 +99,7 @@ std::string Connection::read_raw(unsigned const amount, int const flags) {
     }
 
     std::string const output(buf, read_count);
+    TRACE("read() amount: " << amount << ", output: \"" << output << "\", flags: " << flags);
     delete[] buf;
     return output;
 }
