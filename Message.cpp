@@ -2,12 +2,14 @@
 #include "Connection.h"
 
 #include <iomanip>
+#include <iostream>
 #include <memory>
 
 Message::Message(MessageType const type) : _type(type) { }
 
 std::unique_ptr<Message> Message::decode(Connection& conn) {
     std::string output = conn.read_raw(3);
+    if (output.empty()) return NULL;
     MessageType const type = (MessageType) std::stoi(output);
     switch (type) {
     case MT_CLIENT_LOG_IN: return std::make_unique<MClientLogIn>(conn);
@@ -43,6 +45,7 @@ MClientLogIn::MClientLogIn(std::string const& username)
 MClientLogIn::MClientLogIn(Connection& conn)
     : Message(MT_CLIENT_LOG_IN)
 {
+    TRACE("MClientLogIn(conn)");
     unsigned const len_username = std::stoi(conn.read_raw(2));
     this->username = conn.read_raw(len_username);
 }
@@ -69,6 +72,7 @@ MClientUpdate::MClientUpdate(
 MClientUpdate::MClientUpdate(Connection& conn)
     : Message(MT_CLIENT_UPDATE)
 {
+    TRACE("MClientUpdate(conn)");
     unsigned const len_recipient = std::stoi(conn.read_raw(2));
     this->recipient = conn.read_raw(len_recipient);
     unsigned const len_message = std::stoi(conn.read_raw(5));
@@ -101,6 +105,7 @@ MServerUpdate::MServerUpdate(
 MServerUpdate::MServerUpdate(Connection& conn)
     : Message(MT_SERVER_UPDATE)
 {
+    TRACE("MServerUpdate(conn)");
     unsigned const len_chat_content = std::stoi(conn.read_raw(5));
     this->chat_content = conn.read_raw(len_chat_content);
     unsigned const len_recipient = std::stoi(conn.read_raw(2));
@@ -140,6 +145,9 @@ std::string MServerUpdate::encode() const {
 
         all_users += username;
     }
+
+    output += pad_number(all_users.size(), 5); // all users length
+    output += all_users; // the all users itself
 
     return output;
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Chat.h"
 #include <memory>
 #include <string>
 #include <set>
@@ -58,7 +59,7 @@ class MServerUpdate : public Message {
 public:
     MServerUpdate(Connection& conn);
     MServerUpdate(
-        std::string const& chat_content,
+        std::string const& last_message,
         std::string const& recipient,
         std::set<std::string> const& _connected_users
     );
