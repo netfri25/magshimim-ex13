@@ -18,7 +18,7 @@ std::unique_ptr<Message> Message::decode(Connection& conn) {
 
     // TODO: exceptions
     default:
-        throw std::runtime_error("Invalid code");
+        throw std::runtime_error("decode error: Invalid code");
     }
 }
 
@@ -130,7 +130,7 @@ std::string MServerUpdate::encode() const {
     output += this->recipient; // the recipient itself
 
     bool first = true;
-    std::string all_users = 0;
+    std::string all_users = "";
     for (auto const& username : this->connected_users) {
         if (first) {
             first = false;
