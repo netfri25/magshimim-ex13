@@ -29,9 +29,14 @@ static std::string pad_number(int const num, int const digits) {
 }
 
 
-MClientLogIn::MClientLogIn(std::string const& username) : _username(username) {}
+MClientLogIn::MClientLogIn(std::string const& username)
+    : Message(MT_CLIENT_LOG_IN)
+    , _username(username)
+{}
 
-MClientLogIn::MClientLogIn(Connection& conn) {
+MClientLogIn::MClientLogIn(Connection& conn)
+    : Message(MT_CLIENT_LOG_IN)
+{
     unsigned const len_username = std::stoi(conn.read_raw(2));
     this->_username = conn.read_raw(len_username);
 }
@@ -49,10 +54,15 @@ std::string MClientLogIn::encode() const {
 MClientUpdate::MClientUpdate(
     std::string const& recipient,
     std::string const& message
-) : _recipient(recipient), _message(message)
+)
+    : Message(MT_CLIENT_UPDATE)
+    , _recipient(recipient)
+    , _message(message)
 { }
 
-MClientUpdate::MClientUpdate(Connection& conn) {
+MClientUpdate::MClientUpdate(Connection& conn)
+    : Message(MT_CLIENT_UPDATE)
+{
     unsigned const len_recipient = std::stoi(conn.read_raw(2));
     this->_recipient = conn.read_raw(len_recipient);
     unsigned const len_message = std::stoi(conn.read_raw(5));
@@ -75,12 +85,16 @@ MServerUpdate::MServerUpdate(
     std::string const& chat_content,
     std::string const& recipient,
     std::set<std::string> const& _connected_users
-) : _chat_content(chat_content)
-  , _recipient(recipient)
-  , _connected_users(_connected_users)
+)
+    : Message(MT_SERVER_UPDATE)
+    , _chat_content(chat_content)
+    , _recipient(recipient)
+    , _connected_users(_connected_users)
 { }
 
-MServerUpdate::MServerUpdate(Connection& conn) {
+MServerUpdate::MServerUpdate(Connection& conn)
+    : Message(MT_SERVER_UPDATE)
+{
     unsigned const len_chat_content = std::stoi(conn.read_raw(5));
     this->_chat_content = conn.read_raw(len_chat_content);
     unsigned const len_recipient = std::stoi(conn.read_raw(2));

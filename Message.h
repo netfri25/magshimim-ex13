@@ -16,9 +16,15 @@ enum MessageType : uint8_t {
 
 class Message {
 public:
+    Message(MessageType const type);
     virtual ~Message() = 0;
     virtual std::string encode() const = 0;
     static std::unique_ptr<Message> decode(Connection& conn);
+
+    MessageType get_message_type();
+
+private:
+    MessageType _type;
 };
 
 class MClientLogIn : public Message {
