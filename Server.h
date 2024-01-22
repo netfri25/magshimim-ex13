@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Chat.h"
 #include "Connection.h"
 #include "Message.h"
 
@@ -18,7 +19,10 @@ private:
 	void handle_client(Connection client_connection);
     MServerUpdate current_status(std::string const& username);
 
-    // std::condition_variable _new_msg;
+    std::queue<ChatMessage> _msgs_queue;
+    std::mutex _msgs_mtx;
+    std::condition_variable _new_msg;
+
     std::mutex _connected_users_mtx;
     std::set<std::string> _connected_users;
 };
