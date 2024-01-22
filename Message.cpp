@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <memory>
 
+Message::Message(MessageType const type) : _type(type) { }
+
 std::unique_ptr<Message> Message::decode(Connection& conn) {
     std::string output = conn.read_raw(3);
     MessageType const type = (MessageType) std::stoi(output);
@@ -20,7 +22,11 @@ std::unique_ptr<Message> Message::decode(Connection& conn) {
     }
 }
 
-Message::~Message() { }
+Message::~Message() {}
+
+MessageType Message::get_message_type() {
+    return this->_type;
+}
 
 static std::string pad_number(int const num, int const digits) {
     std::ostringstream ostr;
@@ -31,21 +37,21 @@ static std::string pad_number(int const num, int const digits) {
 
 MClientLogIn::MClientLogIn(std::string const& username)
     : Message(MT_CLIENT_LOG_IN)
-    , _username(username)
+    , username(username)
 {}
 
 MClientLogIn::MClientLogIn(Connection& conn)
     : Message(MT_CLIENT_LOG_IN)
 {
     unsigned const len_username = std::stoi(conn.read_raw(2));
-    this->_username = conn.read_raw(len_username);
+    this->username = conn.read_raw(len_username);
 }
 
 std::string MClientLogIn::encode() const {
     std::string output = "";
     output += std::to_string(MT_CLIENT_LOG_IN); // code
-    output += pad_number(this->_username.size(), 2); // username length
-    output += this->_username; // the username itself
+    output += pad_number(this->username.size(), 2); // username length
+    output += this->username; // the username itself
     return output;
 }
 
@@ -56,26 +62,26 @@ MClientUpdate::MClientUpdate(
     std::string const& message
 )
     : Message(MT_CLIENT_UPDATE)
-    , _recipient(recipient)
-    , _message(message)
+    , recipient(recipient)
+    , message(message)
 { }
 
 MClientUpdate::MClientUpdate(Connection& conn)
     : Message(MT_CLIENT_UPDATE)
 {
     unsigned const len_recipient = std::stoi(conn.read_raw(2));
-    this->_recipient = conn.read_raw(len_recipient);
+    this->recipient = conn.read_raw(len_recipient);
     unsigned const len_message = std::stoi(conn.read_raw(5));
-    this->_message = conn.read_raw(len_message);
+    this->message = conn.read_raw(len_message);
 }
 
 std::string MClientUpdate::encode() const {
     std::string output = "";
     output += std::to_string(MT_CLIENT_UPDATE); // code
-    output += pad_number(this->_recipient.size(), 2); // recipient length
-    output += this->_recipient; // the recipient itself
-    output += pad_number(this->_message.size(), 5); // the message length
-    output += this->_recipient;
+    output += pad_number(this->recipient.size(), 2); // recipient length
+    output += this->recipient; // the recipient itself
+    output += pad_number(this->message.size(), 5); // the message length
+    output += this->recipient;
     return output;
 }
 
@@ -87,18 +93,18 @@ MServerUpdate::MServerUpdate(
     std::set<std::string> const& _connected_users
 )
     : Message(MT_SERVER_UPDATE)
-    , _chat_content(chat_content)
-    , _recipient(recipient)
-    , _connected_users(_connected_users)
+    , chat_content(chat_content)
+    , recipient(recipient)
+    , connected_users(_connected_users)
 { }
 
 MServerUpdate::MServerUpdate(Connection& conn)
     : Message(MT_SERVER_UPDATE)
 {
     unsigned const len_chat_content = std::stoi(conn.read_raw(5));
-    this->_chat_content = conn.read_raw(len_chat_content);
+    this->chat_content = conn.read_raw(len_chat_content);
     unsigned const len_recipient = std::stoi(conn.read_raw(2));
-    this->_recipient = conn.read_raw(len_recipient);
+    this->recipient = conn.read_raw(len_recipient);
 
     unsigned const len_all_users = std::stoi(conn.read_raw(5));
     std::string const all_users = conn.read_raw(len_all_users);
@@ -110,7 +116,7 @@ MServerUpdate::MServerUpdate(Connection& conn)
             end = all_users.size();
 
         std::string const username = all_users.substr(start, end - start);
-        this->_connected_users.insert(username);
+        this->connected_users.insert(username);
         start = end + 1;
     }
 }
@@ -118,14 +124,14 @@ MServerUpdate::MServerUpdate(Connection& conn)
 std::string MServerUpdate::encode() const {
     std::string output = "";
     output += std::to_string(MT_SERVER_UPDATE); // code
-    output += pad_number(this->_chat_content.size(), 5); // chat content length
-    output += this->_chat_content; // the chat content itself
-    output += pad_number(this->_recipient.size(), 2); // recipient length
-    output += this->_recipient; // the recipient itself
+    output += pad_number(this->chat_content.size(), 5); // chat content length
+    output += this->chat_content; // the chat content itself
+    output += pad_number(this->recipient.size(), 2); // recipient length
+    output += this->recipient; // the recipient itself
 
     bool first = true;
     std::string all_users = 0;
-    for (auto const& username : this->_connected_users) {
+    for (auto const& username : this->connected_users) {
         if (first) {
             first = false;
         } else {

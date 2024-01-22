@@ -34,8 +34,7 @@ public:
 
     virtual std::string encode() const override;
 
-private:
-    std::string _username;
+    std::string username;
 };
 
 class MClientUpdate : public Message {
@@ -45,9 +44,8 @@ public:
 
     virtual std::string encode() const override;
 
-private:
-    std::string _recipient;
-    std::string _message;
+    std::string recipient;
+    std::string message;
 };
 
 class MClientFinish {
@@ -67,8 +65,7 @@ public:
 
     virtual std::string encode() const override;
 
-private:
-    std::string _chat_content;
-    std::string _recipient;
-    std::set<std::string> _connected_users;
+    std::string chat_content;
+    std::string recipient;
+    std::set<std::string> connected_users;
 };
